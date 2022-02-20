@@ -2,6 +2,7 @@ import pygame
 from settings import Settings
 import os
 import sys
+import random
 
 
 class Block:
@@ -110,6 +111,17 @@ class RpsGame:
             scissor = pygame.transform.smoothscale(self.assets['scissor'], (width, height))
             self.screen.blit(scissor, (650, 350))
 
+    def round_generator(self):
+        number_of_sets = 10
+        keys = ['rock', 'paper', 'scissor']
+        round_list = []
+        for i in range(number_of_sets):
+            random_pick = random.randint(0, 2)
+            key_picked = keys[random_pick]
+            value_picked = pygame.transform.smoothscale(self.assets[key_picked], (100, 100))
+            round_list.append((key_picked, value_picked))
+        return round_list
+
 
 class Player:
     def __init__(self):
@@ -127,4 +139,3 @@ class Player:
 if __name__ == '__main__':
     game = RpsGame()
     game.run_game()
-
