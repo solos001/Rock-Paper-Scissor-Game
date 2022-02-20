@@ -28,29 +28,48 @@ class RpsGame:
         self.display = pygame.display
         self.screen = self.display.set_mode((self.settings.screen_width, self.settings.screen_height))
         self.display.set_caption('Rock-Paper-Scissor')
-        self.events = pygame.event
+        self.events = dict()
         self.clock = pygame.time.Clock()
         self.assets = dict()
         self.game_data = dict()
         self.mouse = pygame.mouse
+        self.computer_choices = []
+        self.computer_choice_t = 0
 
     def run_game(self):
         self.load_assets()
         sound_counter = True
+        round_counter = 0
         while True:
             self.clock.tick(self.settings.fps)
+            self.events['Timer_ON'] = False
             self.check_events()
+            if round_counter == 0:
+                pygame.time.set_timer(pygame.USEREVENT + 1,300, loops=10)
+                self.computer_choices = self.round_generator()
+                self.computer_choice_t = self.computer_choices[round_counter][1]
+                round_counter += 1
+            elif round_counter > 0 and self.events['Timer_ON']:
+                self.computer_choice_t = self.computer_choices[round_counter][1]
+                round_counter += 1
+            if round_counter == 9:
+                round_counter = 0
+                pygame.time.set_timer(pygame.USEREVENT + 1, 0, loops=10)
+
             if sound_counter and any(self.cursor_onhold().values()):
                 self.assets['button_sound'].play()
                 sound_counter = False
             elif not any((self.cursor_onhold().values())):
                 sound_counter = True
+
             self.update_screen()
 
     def check_events(self):
-        for event in self.events.get():
+        for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 print(event.key)
+            if event.type == pygame.USEREVENT + 1:
+                self.events['Timer_ON'] = True
             if event.type == pygame.QUIT:
                 sys.exit()
 
@@ -60,6 +79,7 @@ class RpsGame:
         self.button_drawer()
         self.time_bar()
         self.screen.blit(self.assets['cursor'], self.mouse.get_pos())
+        self.screen.blit(self.computer_choice_t, (350, 50))
         self.display.update()
 
     def load_assets(self):
@@ -118,7 +138,7 @@ class RpsGame:
         for i in range(number_of_sets):
             random_pick = random.randint(0, 2)
             key_picked = keys[random_pick]
-            value_picked = pygame.transform.smoothscale(self.assets[key_picked], (100, 100))
+            value_picked = pygame.transform.smoothscale(self.assets[key_picked], (200, 200))
             round_list.append((key_picked, value_picked))
         return round_list
 
