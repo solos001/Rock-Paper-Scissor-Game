@@ -8,6 +8,7 @@ GREEN = (47, 249, 36)
 GREY = (192, 192, 192)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
 
 class RpsGame:
@@ -26,8 +27,7 @@ class RpsGame:
         self.mouse = pygame.mouse
         self.computer_choices = []
         self.computer_choice_t = 0
-        # self.font = pygame.font.SysFont('comicsans', 40)
-        self.font = pygame.font.Font('RPS_assets//font.otf',30)
+        self.font = pygame.font.Font('RPS_assets//font.otf', 30)
 
     def run_game(self):
         self.load_assets()
@@ -96,7 +96,6 @@ class RpsGame:
                 sound_counter = False
             elif not any((self.cursor_onhold().values())):
                 sound_counter = True
-            print(self.game_data['player_score'])
             self.update_screen()
 
     def check_events(self):
@@ -119,12 +118,13 @@ class RpsGame:
     def update_screen(self):
         pygame.mouse.set_visible(False)
         self.screen.fill(self.settings.bg_color)
+        self.screen.blit(self.assets['background'], (0, 0))
         self.button_drawer()
         if self.events['Countdown_ON']:
             self.time_bar(self.game_data['percent'])
         self.screen.blit(self.computer_choice_t, (350, 50))
         self.screen.blit(self.assets['cursor'], self.mouse.get_pos())
-        self.screen.blit(self.score_display(), (680, 20))
+        self.screen.blit(self.score_display(), (700, 40))
         self.display.update()
 
     def load_assets(self):
@@ -136,7 +136,9 @@ class RpsGame:
                                                     (30, 30))
         correct_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'correct_sound_2.mp3'))
         wrong_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'wrong_sound_2.mp3'))
-        clocksound = pygame.mixer.Sound(os.path.join('RPS_assets', 'clock-ticking_f.mp3'))
+        clock_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'clock-ticking_f.mp3'))
+        background = pygame.transform.smoothscale(pygame.image.load(os.path.join('RPS_assets', 'background4.png')),
+                                                  (self.settings.screen_width, self.settings.screen_height))
         self.assets['rock'] = rock_image
         self.assets['scissor'] = scissor_image
         self.assets['paper'] = paper_image
@@ -144,7 +146,8 @@ class RpsGame:
         self.assets['button_sound'] = button_sound
         self.assets['correct_sound'] = correct_sound
         self.assets['wrong_sound'] = wrong_sound
-        self.assets['Clock-sound'] = clocksound
+        self.assets['Clock-sound'] = clock_sound
+        self.assets['background'] = background
 
     def time_bar(self, percent=1):
         pygame.draw.rect(self.screen, (192, 192, 192), pygame.Rect(348, 270, 204, 12), 2, 4, 4, 4, 4)
@@ -204,7 +207,7 @@ class RpsGame:
         else:
             return False
 
-    def score_display(self, color=BLACK):
+    def score_display(self, color=WHITE):
         score_num = self.game_data['player_score']
         score = self.font.render(f'Score: {score_num}', 1, color)
         return score
