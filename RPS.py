@@ -40,12 +40,14 @@ class RpsGame:
         self.load_assets()
         sound_counter = True
         round_counter = 0
+        countdown_start = 0
         while True:
             self.clock.tick(self.settings.fps)
             self.events['Timer_ON'] = False
+            self.events['Countdown_ON'] = False
             self.check_events()
             if round_counter == 0:
-                pygame.time.set_timer(pygame.USEREVENT + 1,300, loops=10)
+                pygame.time.set_timer(pygame.USEREVENT + 1, 300, loops=10)
                 self.computer_choices = self.round_generator()
                 self.computer_choice_t = self.computer_choices[round_counter][1]
                 round_counter += 1
@@ -53,9 +55,14 @@ class RpsGame:
                 self.computer_choice_t = self.computer_choices[round_counter][1]
                 round_counter += 1
             if round_counter == 9:
-                round_counter = 0
+                countdown_start = pygame.time.get_ticks()
+                round_counter = -1
                 pygame.time.set_timer(pygame.USEREVENT + 1, 0, loops=10)
-
+            if round_counter == -1 and pygame.time.get_ticks() < countdown_start + 2000:
+                countdown_offset = pygame.time.get_ticks() - countdown_start
+                percent = 1 - (countdown_offset/2000)
+                self.events['Countdown_ON'] = True
+                self.game_data['percent'] = percent
             if sound_counter and any(self.cursor_onhold().values()):
                 self.assets['button_sound'].play()
                 sound_counter = False
@@ -77,9 +84,10 @@ class RpsGame:
         pygame.mouse.set_visible(False)
         self.screen.fill(self.settings.bg_color)
         self.button_drawer()
-        self.time_bar()
-        self.screen.blit(self.assets['cursor'], self.mouse.get_pos())
+        if self.events['Countdown_ON']:
+            self.time_bar(self.game_data['percent'])
         self.screen.blit(self.computer_choice_t, (350, 50))
+        self.screen.blit(self.assets['cursor'], self.mouse.get_pos())
         self.display.update()
 
     def load_assets(self):
@@ -97,7 +105,7 @@ class RpsGame:
 
     def time_bar(self, percent=1):
         pygame.draw.rect(self.screen, (192, 192, 192), pygame.Rect(348, 270, 204, 12), 2, 4, 4, 4, 4)
-        pygame.draw.rect(self.screen, (47, 249, 36), pygame.Rect(350, 272, 200 * percent, 8), 0, 2, 2, 2, 2)
+        pygame.draw.rect(self.screen, (47, 249, 36), pygame.Rect(350, 272, int(200 * percent), 8), 0, 2, 2, 2, 2)
 
     def cursor_onhold(self):
         rock_rect = pygame.Rect(160, 360, 80, 80)
