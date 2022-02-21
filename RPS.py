@@ -87,10 +87,13 @@ class RpsGame:
                             self.game_data['player_choice'] = button_state
                     if self.outcome():
                         self.game_data['player_score'] += int(self.game_data['percent'] * 10)
+                        self.assets['correct_sound'].play()
                     else:
                         self.game_data['player_score'] = 0
+                        self.assets['wrong_sound'].play()
                     round_counter = 0
             elif round_counter == -1 and pygame.time.get_ticks() > countdown_start + 2000:
+                self.assets['wrong_sound'].play()
                 round_counter = 0
                 self.game_data['player_score'] = 0
             if sound_counter and any(self.cursor_onhold().values()):
@@ -135,11 +138,15 @@ class RpsGame:
         button_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'button_sound.mp3'))
         cursor_image = pygame.transform.smoothscale(pygame.image.load(os.path.join('RPS_assets', 'cursor.cur')),
                                                     (30, 30))
+        correct_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'correct_sound.mp3'))
+        wrong_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'wrong_sound.mp3'))
         self.assets['rock'] = rock_image
         self.assets['scissor'] = scissor_image
         self.assets['paper'] = paper_image
         self.assets['cursor'] = cursor_image
         self.assets['button_sound'] = button_sound
+        self.assets['correct_sound'] = correct_sound
+        self.assets['wrong_sound'] = wrong_sound
 
     def time_bar(self, percent=1):
         pygame.draw.rect(self.screen, (192, 192, 192), pygame.Rect(348, 270, 204, 12), 2, 4, 4, 4, 4)
@@ -190,8 +197,8 @@ class RpsGame:
         return round_list
 
     def outcome(self):
-        computer_choice=self.game_data['computer_choice']
-        player_choice=self.game_data['player_choice']
+        computer_choice = self.game_data['computer_choice']
+        player_choice = self.game_data['player_choice']
         if (computer_choice == 'rock' and player_choice == 'paper') or (
                 computer_choice == 'paper' and player_choice == 'scissor') or (
                 computer_choice == 'scissor' and player_choice == 'rock'):
