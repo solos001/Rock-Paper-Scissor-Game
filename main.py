@@ -7,27 +7,14 @@ import random
 GREEN = (47, 249, 36)
 GREY = (192, 192, 192)
 RED = (255, 0, 0)
-
-
-class Block:
-    def __init__(self, image, width, height, pos_x, pos_y):
-        self.surface = pygame.transform.smoothscale(image, (width, height))
-        self.rect = image.get_rect()
-        self.width = width
-        self.height = height
-
-    def move(self, x, y):
-        self.rect = self.rect.move(x, y)
-
-    def expanded(self):
-        expanded = pygame.transform.smoothscale(self.surface, (self.width * 1.3, self.height * 1.3))
-        return expanded
+BLACK = (0, 0, 0)
 
 
 class RpsGame:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
+        pygame.font.init()
         self.settings = Settings.Settings()
         self.display = pygame.display
         self.screen = self.display.set_mode((self.settings.screen_width, self.settings.screen_height))
@@ -39,6 +26,8 @@ class RpsGame:
         self.mouse = pygame.mouse
         self.computer_choices = []
         self.computer_choice_t = 0
+        # self.font = pygame.font.SysFont('comicsans', 40)
+        self.font = pygame.font.Font('RPS_assets//font.otf',30)
 
     def run_game(self):
         self.load_assets()
@@ -48,6 +37,7 @@ class RpsGame:
         self.game_data['player_score'] = 0
         self.events['MOUSEBUTTONUP'] = False
         self.events['MOUSEBUTTONDOWN'] = False
+        self.events['Clock_sound_ON'] = False
         while True:
             self.clock.tick(self.settings.fps)
             self.events['Timer_ON'] = False
@@ -68,10 +58,13 @@ class RpsGame:
                 self.game_data['computer_choice'] = self.computer_choices[round_counter][0]
                 round_counter += 1
             if round_counter == 9:
+                self.events['Clock_sound_ON'] = True
                 countdown_start = pygame.time.get_ticks()
                 round_counter = -1
                 pygame.time.set_timer(pygame.USEREVENT + 1, 0, loops=10)
-
+            if self.events['Clock_sound_ON']:
+                self.assets['Clock-sound'].play()
+                self.events['Clock_sound_ON'] = False
             if round_counter == -1 and pygame.time.get_ticks() < countdown_start + 2000:
                 countdown_offset = pygame.time.get_ticks() - countdown_start
                 percent = 1 - (countdown_offset / 2000)
@@ -92,10 +85,12 @@ class RpsGame:
                         self.game_data['player_score'] = 0
                         self.assets['wrong_sound'].play()
                     round_counter = 0
+                    self.assets['Clock-sound'].stop()
             elif round_counter == -1 and pygame.time.get_ticks() > countdown_start + 2000:
                 self.assets['wrong_sound'].play()
                 round_counter = 0
                 self.game_data['player_score'] = 0
+                self.assets['Clock-sound'].stop()
             if sound_counter and any(self.cursor_onhold().values()):
                 self.assets['button_sound'].play()
                 sound_counter = False
@@ -129,6 +124,7 @@ class RpsGame:
             self.time_bar(self.game_data['percent'])
         self.screen.blit(self.computer_choice_t, (350, 50))
         self.screen.blit(self.assets['cursor'], self.mouse.get_pos())
+        self.screen.blit(self.score_display(), (680, 20))
         self.display.update()
 
     def load_assets(self):
@@ -138,8 +134,9 @@ class RpsGame:
         button_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'button_sound.mp3'))
         cursor_image = pygame.transform.smoothscale(pygame.image.load(os.path.join('RPS_assets', 'cursor.cur')),
                                                     (30, 30))
-        correct_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'correct_sound.mp3'))
-        wrong_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'wrong_sound.mp3'))
+        correct_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'correct_sound_2.mp3'))
+        wrong_sound = pygame.mixer.Sound(os.path.join('RPS_assets', 'wrong_sound_2.mp3'))
+        clocksound = pygame.mixer.Sound(os.path.join('RPS_assets', 'clock-ticking_f.mp3'))
         self.assets['rock'] = rock_image
         self.assets['scissor'] = scissor_image
         self.assets['paper'] = paper_image
@@ -147,6 +144,7 @@ class RpsGame:
         self.assets['button_sound'] = button_sound
         self.assets['correct_sound'] = correct_sound
         self.assets['wrong_sound'] = wrong_sound
+        self.assets['Clock-sound'] = clocksound
 
     def time_bar(self, percent=1):
         pygame.draw.rect(self.screen, (192, 192, 192), pygame.Rect(348, 270, 204, 12), 2, 4, 4, 4, 4)
@@ -205,6 +203,11 @@ class RpsGame:
             return True
         else:
             return False
+
+    def score_display(self, color=BLACK):
+        score_num = self.game_data['player_score']
+        score = self.font.render(f'Score: {score_num}', 1, color)
+        return score
 
 
 class Player:
