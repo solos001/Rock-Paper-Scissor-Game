@@ -4,6 +4,10 @@ import os
 import sys
 import random
 
+GREEN = (47, 249, 36)
+GREY = (192, 192, 192)
+RED = (255, 0, 0)
+
 
 class Block:
     def __init__(self, image, width, height, pos_x, pos_y):
@@ -41,11 +45,19 @@ class RpsGame:
         sound_counter = True
         round_counter = 0
         countdown_start = 0
+        self.game_data['player_score'] = 0
+        self.events['MOUSEBUTTONUP'] = False
+        self.events['MOUSEBUTTONDOWN'] = False
         while True:
             self.clock.tick(self.settings.fps)
             self.events['Timer_ON'] = False
             self.events['Countdown_ON'] = False
+            if self.events['MOUSEBUTTONUP']:
+                self.events['MOUSEBUTTONDOWN'] = False
+            self.events['MOUSEBUTTONUP'] = False
+            self.events['Clicked'] = False
             self.check_events()
+
             if round_counter == 0:
                 pygame.time.set_timer(pygame.USEREVENT + 1, 300, loops=10)
                 self.computer_choices = self.round_generator()
@@ -53,30 +65,56 @@ class RpsGame:
                 round_counter += 1
             elif round_counter > 0 and self.events['Timer_ON']:
                 self.computer_choice_t = self.computer_choices[round_counter][1]
+                self.game_data['computer_choice'] = self.computer_choices[round_counter][0]
                 round_counter += 1
             if round_counter == 9:
                 countdown_start = pygame.time.get_ticks()
                 round_counter = -1
                 pygame.time.set_timer(pygame.USEREVENT + 1, 0, loops=10)
+
             if round_counter == -1 and pygame.time.get_ticks() < countdown_start + 2000:
                 countdown_offset = pygame.time.get_ticks() - countdown_start
-                percent = 1 - (countdown_offset/2000)
+                percent = 1 - (countdown_offset / 2000)
                 self.events['Countdown_ON'] = True
                 self.game_data['percent'] = percent
+                if percent > 0.3:
+                    self.game_data['bar_color'] = GREEN
+                else:
+                    self.game_data['bar_color'] = RED
+                if self.events['Clicked'] and any(self.cursor_onhold().values()):
+                    for button_state in self.cursor_onhold():
+                        if self.cursor_onhold()[button_state]:
+                            self.game_data['player_choice'] = button_state
+                    if self.outcome():
+                        self.game_data['player_score'] += int(self.game_data['percent'] * 10)
+                    else:
+                        self.game_data['player_score'] = 0
+                    round_counter = 0
+            elif round_counter == -1 and pygame.time.get_ticks() > countdown_start + 2000:
+                round_counter = 0
+                self.game_data['player_score'] = 0
             if sound_counter and any(self.cursor_onhold().values()):
                 self.assets['button_sound'].play()
                 sound_counter = False
             elif not any((self.cursor_onhold().values())):
                 sound_counter = True
-
+            print(self.game_data['player_score'])
             self.update_screen()
 
     def check_events(self):
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                print(event.key)
+                pass
             if event.type == pygame.USEREVENT + 1:
                 self.events['Timer_ON'] = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.events['MOUSEBUTTONDOWN'] = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                self.events['MOUSEBUTTONUP'] = True
+            if self.events['MOUSEBUTTONUP'] and self.events['MOUSEBUTTONDOWN']:
+                self.events['MOUSEBUTTONDOWN'] = False
+                self.events['MOUSEBUTTONUP'] = False
+                self.events['Clicked'] = True
             if event.type == pygame.QUIT:
                 sys.exit()
 
@@ -105,7 +143,8 @@ class RpsGame:
 
     def time_bar(self, percent=1):
         pygame.draw.rect(self.screen, (192, 192, 192), pygame.Rect(348, 270, 204, 12), 2, 4, 4, 4, 4)
-        pygame.draw.rect(self.screen, (47, 249, 36), pygame.Rect(350, 272, int(200 * percent), 8), 0, 2, 2, 2, 2)
+        pygame.draw.rect(self.screen, self.game_data['bar_color'], pygame.Rect(350, 272, int(200 * percent), 8), 0, 2,
+                         2, 2, 2)
 
     def cursor_onhold(self):
         rock_rect = pygame.Rect(160, 360, 80, 80)
@@ -149,6 +188,16 @@ class RpsGame:
             value_picked = pygame.transform.smoothscale(self.assets[key_picked], (200, 200))
             round_list.append((key_picked, value_picked))
         return round_list
+
+    def outcome(self):
+        computer_choice=self.game_data['computer_choice']
+        player_choice=self.game_data['player_choice']
+        if (computer_choice == 'rock' and player_choice == 'paper') or (
+                computer_choice == 'paper' and player_choice == 'scissor') or (
+                computer_choice == 'scissor' and player_choice == 'rock'):
+            return True
+        else:
+            return False
 
 
 class Player:
